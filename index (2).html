@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUSANBOY Kino</title>
+<style>
+  :root{--bg:#0f1117;--card:#1b1e29;--text:#f2f3f7;--muted:#9aa0b4;--accent:#e50914}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  header{padding:14px 18px;background:var(--card)}
+  header h1{font-size:20px;color:var(--accent)}
+  .hero{text-align:center;padding:30px 18px 8px}
+  .hero h2{font-size:34px;letter-spacing:3px;color:var(--text)}
+  .ask{background:var(--card);margin:16px 18px 0;padding:16px;border-radius:12px}
+  .ask h3{font-size:16px;margin-bottom:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:#2a2e3d;color:var(--text);border:0;padding:9px 14px;border-radius:20px;font-size:14px;cursor:pointer}
+  .chip.on{background:var(--accent)}
+  #app{padding:18px}
+  h3.sec{font-size:17px;margin:6px 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+  .movie{background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer}
+  .movie img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
+  .movie div{padding:10px;font-size:14px}
+  .movie small{display:block;color:var(--muted);margin-top:3px;font-size:12px}
+  #player{display:none;margin-bottom:20px}
+  #player iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:10px}
+  #player h2{margin:10px 0 4px;font-size:18px}
+  #player p{color:var(--muted);font-size:14px}
+  .empty{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<header><h1>🎬 HUSANBOY</h1></header>
+<section class="hero"><h2>HUSANBOY</h2></section>
+
+<section class="ask">
+  <h3>Qaysi mavzudagi kinolarni yoqtirasiz?</h3>
+  <div class="chips" id="chips"></div>
+</section>
+
+<main id="app">
+  <div id="player">
+    <iframe id="frame" allowfullscreen allow="autoplay; fullscreen"></iframe>
+    <h2 id="ptitle"></h2>
+    <p id="pdesc"></p>
+  </div>
+  <h3 class="sec">🔥 Ko‘p ko‘rilgan</h3>
+  <div class="grid" id="top"></div>
+  <h3 class="sec" id="allTitle">Barcha kinolar</h3>
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+  // Kinolar ro‘yxati: topic = mavzu, yt = YouTube video ID.
+  // Faqat o‘zingizga tegishli yoki bepul/litsenziyalangan videolarni qo‘shing.
+  const MOVIES = [
+    {title:"Big Buck Bunny", topic:"Multfilm", desc:"Qisqa multfilm (Blender Foundation).", yt:"aqz-KE-bpKQ"},
+    {title:"Sintel", topic:"Fentezi", desc:"Fentezi qisqa metrajli film (Blender Foundation).", yt:"eRsGyueVLvQ"},
+    {title:"Tears of Steel", topic:"Fantastika", desc:"Fantastik qisqa film (Blender Foundation).", yt:"R6MlUcmOul8"}
+  ];
+
+  let topic = "Barchasi";
+  let views = {};
+  try { views = JSON.parse(localStorage.getItem("views") || "{}"); } catch(e) {}
+
+  function saveViews(){ try { localStorage.setItem("views", JSON.stringify(views)); } catch(e) {} }
+  function count(m){ return views[m.yt] || 0; }
+
+  function card(m){
+    const el = document.createElement("div");
+    el.className = "movie";
+    el.innerHTML = '<img src="https://img.youtube.com/vi/' + m.yt + '/hqdefault.jpg" alt=""><div><span></span><small></small></div>';
+    el.querySelector("span").textContent = m.title;
+    el.querySelector("small").textContent = m.topic + " · " + count(m) + " marta ko‘rilgan";
+    el.onclick = () => play(m);
+    return el;
+  }
+
+  function play(m){
+    views[m.yt] = count(m) + 1;
+    saveViews();
+    document.getElementById("frame").src = "https://www.youtube.com/embed/" + m.yt + "?autoplay=1";
+    document.getElementById("ptitle").textContent = m.title;
+    document.getElementById("pdesc").textContent = m.desc;
+    document.getElementById("player").style.display = "block";
+    window.scrollTo({top:0, behavior:"smooth"});
+    render();
+  }
+
+  function render(){
+    const list = MOVIES.filter(m => topic === "Barchasi" || m.topic === topic);
+    const sorted = list.slice().sort((a,b) => count(b) - count(a));
+    const top = document.getElementById("top");
+    const grid = document.getElementById("grid");
+    top.innerHTML = ""; grid.innerHTML = "";
+    sorted.slice(0,3).forEach(m => top.appendChild(card(m)));
+    list.forEach(m => grid.appendChild(card(m)));
+    if(!list.length){ top.innerHTML = '<p class="empty">Bu mavzuda kino topilmadi.</p>'; }
+    document.getElementById("allTitle").textContent = topic === "Barchasi" ? "Barcha kinolar" : topic + " kinolari";
+  }
+
+  const topics = ["Barchasi"].concat([...new Set(MOVIES.map(m => m.topic))]);
+  const chips = document.getElementById("chips");
+  topics.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "chip" + (t === topic ? " on" : "");
+    b.textContent = t;
+    b.onclick = () => {
+      topic = t;
+      chips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.textContent === t));
+      render();
+    };
+    chips.appendChild(b);
+  });
+
+  render();
+</script>
+</body>
+</html>
